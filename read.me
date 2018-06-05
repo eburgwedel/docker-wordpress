@@ -1,0 +1,47 @@
+# Backup:
+https://wordpress.org/plugins/dropbox-backup/
+
+______________________________
+
+Volumes:
+docker volume create —-name wp_content
+docker volume create —-name db_data
+
+______________________________
+
+# Secrets:
+echo "mysecret1b1ee244779d3b7a90bc80be3721fac5f26b350480680" | docker secret create SECRET_MYSQL_ROOT -;
+printf "qwertz-root-password" | docker secret create db_root_password -
+printf "qwertz-db-password" | docker secret create db_password -
+
+echo "qwertz-root-password" > db_root_password.txt
+echo "qwertz-db-password" > db_password.txt
+
+/* how to use secrets
+
+https://docs.docker.com/engine/swarm/secrets/#intermediate-example-use-secrets-with-a-nginx-service
+https://training.play-with-docker.com/swarm-compose-secrets/
+
+/* Passwords are stored in files in this case
+
+environment:
+       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+       MYSQL_DATABASE: wordpress
+       MYSQL_USER: wordpress
+       MYSQL_PASSWORD_FILE: /run/secrets/db_password
+secrets:
+   db_password:
+     file: db_password.txt
+   db_root_password:
+     file: db_root_password.txt
+
+secrets:
+   db_password:
+     external: true
+   db_root_password:
+     external: true
+
+______________________________
+
+# Backup/Restore Volumes:
+https://stackoverflow.com/questions/21597463/how-to-port-data-only-volumes-from-one-host-to-another
