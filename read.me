@@ -3,9 +3,14 @@ https://wordpress.org/plugins/dropbox-backup/
 
 ______________________________
 
-Volumes:
+# Volumes:
 docker volume create —-name wp_content
 docker volume create —-name db_data
+
+______________________________
+
+# Network
+docker network create nginxproxy_default
 
 ______________________________
 
@@ -45,3 +50,16 @@ ______________________________
 
 # Backup/Restore Volumes:
 https://stackoverflow.com/questions/21597463/how-to-port-data-only-volumes-from-one-host-to-another
+
+# Lean Setup on NginX, Alpine, Memchached
+
+https://hub.docker.com/r/etopian/alpine-php-wordpress/
+https://github.com/fjudith/docker-wordpress
+https://github.com/koni/docker-php-nginx-mysql-memcached
+
+# Optimizing Wordpress Performance and Ressource requirements
+
+http://ryanfrankel.com/run-wordpress-digital-ocean-512mb-vps/
+
+# Monster Setup 
+https://dev.to/foresthoffman/hosting-wordpress-over-https-with-docker-5gc
