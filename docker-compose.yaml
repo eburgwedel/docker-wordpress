@@ -5,7 +5,7 @@ services:
     container_name: nginx-wordpress
     image: nginx:latest
     ports:
-      - '80'
+      - '8080:80'
     volumes:
       - ./nginx:/etc/nginx/conf.d
       - ./nginx.conf:/etc/nginx/nginx.conf
@@ -17,8 +17,9 @@ services:
     networks:
       - nginxproxy_default
 
-  db:
-    image: mysql:5.7
+  mysql:
+    container_name: mysql
+    image: mariadb # mysql:5.7
     ports: 
       - '3306'
     volumes:
@@ -29,8 +30,8 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
       # MYSQL_PASSWORD_FILE: /run/secrets/db_password
-      MYSQL_PASSWORD: root
     networks:
       - nginxproxy_default
     secrets:
@@ -47,12 +48,12 @@ services:
     environment:
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_TABLE_PREFIX: wpprefix_
-      WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_PASSWORD: wordpress
       # WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
-      WORDPRESS_DB_PASSWORD: root
     depends_on:
-      - db
+      - mysql
     # restart: always
     networks:
       - nginxproxy_default
