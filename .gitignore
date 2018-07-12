@@ -1,9 +1,8 @@
 # Specific Section #
 ####################
-/logs
-/mysql
-/wordpress
-etc/
+/data
+/initial file structure
+docker-compose-og.yaml
 
 # General Section #
 # Compiled source #

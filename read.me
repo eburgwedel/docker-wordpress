@@ -1,3 +1,13 @@
+# Docker Swarm
+docker swarm init --advertise-addr 10.19.0.5
+Droplet on digital ocean has two IPs, this is the internal one
+
+# Deployment as stack
+# !!! Docker external secrets are only available in swarm mode
+# Then they are not NOT available in 'docker-compose up', 
+# only in stacks, using 'ocker stack deploy'!
+docker stack deploy --compose-file docker-compose.yml wordpress
+
 # Backup:
 https://wordpress.org/plugins/dropbox-backup/
 
@@ -15,10 +25,12 @@ docker network create nginxproxy_default
 ______________________________
 
 # Secrets:
+/* external secrets (docker swarm stacks only)
 echo "mysecret1b1ee244779d3b7a90bc80be3721fac5f26b350480680" | docker secret create SECRET_MYSQL_ROOT -;
 printf "qwertz-root-password" | docker secret create db_root_password -
 printf "qwertz-db-password" | docker secret create db_password -
 
+/* using secrets files (use for docker-compose up)
 echo "qwertz-root-password" > db_root_password.txt
 echo "qwertz-db-password" > db_password.txt
 
@@ -52,14 +64,54 @@ ______________________________
 https://stackoverflow.com/questions/21597463/how-to-port-data-only-volumes-from-one-host-to-another
 
 # Lean Setup on NginX, Alpine, Memchached
-
 https://hub.docker.com/r/etopian/alpine-php-wordpress/
 https://github.com/fjudith/docker-wordpress
 https://github.com/koni/docker-php-nginx-mysql-memcached
 
-# Optimizing Wordpress Performance and Ressource requirements
+# Install Memchached on php7 alpine
+https://stackoverflow.com/questions/40894385/how-can-i-install-the-php-memcached-extension-on-dockers-php7-alpine-image
 
+# Optimizing Wordpress Performance and Ressource requirements
 http://ryanfrankel.com/run-wordpress-digital-ocean-512mb-vps/
 
 # Monster Setup 
-https://dev.to/foresthoffman/hosting-wordpress-over-https-with-docker-5gc
+https://dev.to/foresthoffman/hosting-wordpress-over-https-with-docker-5gc # don'T use reverse proxy
+https://github.com/jwilder/nginx-proxy # use this instead
+https://hub.docker.com/r/jrcs/letsencrypt-nginx-proxy-companion/
+
+
+# NginX Reverse Proxy
+https://github.com/jwilder/nginx-proxy
+
+# Solve upload file size problem for nginx-ssl-proxy
+https://github.com/jwilder/nginx-proxy/issues/981
+
+# Test processes for port occupation
+sudo lsof -i tcp:8080
+
+# NginX Trouble Shooting
+https://blog.serverdensity.com/troubleshoot-nginx/
+
+# Remote Editing in Visual Studio
+https://medium.com/@prtdomingo/editing-files-in-your-linux-virtual-machine-made-a-lot-easier-with-remote-vscode-6bb98d0639a4
+https://spin.atomicobject.com/2017/12/18/remote-vscode-file-editing/
+
+Local
+~.ssh/config
+Host *
+    ForwardAgent yes
+    RemoteForward 52698 127.0.0.1:52698
+
+Remote
+wget -O /usr/local/bin/rmate https://raw.github.com/aurora/rmate/master/rmate
+chmod a+x /usr/local/bin/rmate
+
+In Visual Studio Code Terminal
+1) Terminal: connect to remote server using ssh
+2) Visual Studio Code: CMD-P -> '>Remote Start Server'
+3) Terminal: rmate <filename>
+
+# Wordpress Memchached
+Install WP Plugin: 'MemcacheD Is Your Friend'
+OR look into 'Memcached Redux' (Dropin Plugin), 
+so you need to copy code object-cache.php manually)

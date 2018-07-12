@@ -1,0 +1,33 @@
+version: '3'
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy:alpine
+    container_name: nginx-proxy-test
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro # needed for docker-gen
+      - ./nginx-ssl-proxy/data/certs:/etc/nginx/certs # to create/renew Let's Encrypt certificates
+      - ./nginx-ssl-proxy/data/vhost.d:/etc/nginx/vhost.d # to change the configuration of vhosts (needed by Let's Encrypt)
+      - ./nginx-ssl-proxy/data/html:/usr/share/nginx/html # to write ACME challenge files.
+
+  letsencrypt-nginx-proxy-companion:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt-nginx-proxy-companion
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # needed for docker-gen
+      # Same volumes as nginx-proxy
+      - ./nginx-ssl-proxy/data/certs:/etc/nginx/certs # to create/renew Let's Encrypt certificates
+      - ./nginx-ssl-proxy/data/vhost.d:/etc/nginx/vhost.d # to change the configuration of vhosts (needed by Let's Encrypt)
+      - ./nginx-ssl-proxy/data/html:/usr/share/nginx/html # to write ACME challenge files.
+    environment:
+      - NGINX_PROXY_CONTAINER=nginx-proxy-test
+
+  whoami:
+    image: jwilder/whoami
+    environment:
+      - VIRTUAL_HOST=skillstack.io,www.skillstack.io,site.local.skillstack.io
+      - LETSENCRYPT_HOST=skillstack.io,www.skillstack.io,mail.skillstack.io
+      - LETSENCRYPT_EMAIL=eckart@skillstack.io
+      - LETSENCRYPT_TEST=true

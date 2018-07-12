@@ -1,0 +1,142 @@
+version: '3.3'
+
+services:
+  nginx:
+    # container name doesn't work for swarm
+    # container_name: nginx-wordpress
+    image: nginx:latest
+    ports:
+      - '80'
+    volumes:
+      - ./data/nginx/conf.d:/etc/nginx/conf.d
+      - ./data/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./data/logs/nginx:/var/log/nginx
+      - ./data/wordpress:/var/www/html
+    ### for reverse proxy
+    environment:
+      - VIRTUAL_HOST=skillstack.io,www.skillstack.io
+      - LETSENCRYPT_HOST=skillstack.io,www.skillstack.io
+      - LETSENCRYPT_EMAIL=eckart@skillstack.io
+    # Add this line while testing so not to exceed the certificate limits
+    # - LETSENCRYPT_TEST=true
+    depends_on:
+      - wordpress
+    deploy:
+      replicas: 1
+    # Irrelevant for swarm
+    # restart: always
+    networks:
+      - nginxproxy_default
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy:alpine
+    # container_name: nginx-proxy
+    depends_on:
+      - nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # For Docker-Gen
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      # Set max upload file sizels
+      - ./data/nginx-ssl-proxy/conf.d/client_max_body_size.conf:/etc/nginx/conf.d/client_max_body_size.conf
+      # For SSL
+      - ./data/nginx-ssl-proxy/certs:/etc/nginx/certs # to create/renew Let's Encrypt certificates
+      - ./data/nginx-ssl-proxy/vhost.d:/etc/nginx/vhost.d # to change the configuration of vhosts (needed by Let's Encrypt)
+      - ./data/nginx-ssl-proxy/html:/usr/share/nginx/html # to write ACME challenge files.
+    environment:
+      # added to make the proxy the catch-all server (https://github.com/jwilder/nginx-proxy/issues/582)
+      - DEFAULT_HOST=skillstack.io
+      - ENABLE_IPV6=true
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    networks:
+      - nginxproxy_default
+
+  letsencrypt-nginx-proxy-companion:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    # container name doesn't work for swarm
+    # container_name: letsencrypt-nginx-proxy-companion
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # needed for docker-gen
+      # Same volumes as nginx-proxy
+      - ./data/nginx-ssl-proxy/certs:/etc/nginx/certs # to create/renew Let's Encrypt certificates
+      - ./data/nginx-ssl-proxy/vhost.d:/etc/nginx/vhost.d # to change the configuration of vhosts (needed by Let's Encrypt)
+      - ./data/nginx-ssl-proxy/html:/usr/share/nginx/html # to write ACME challenge files.
+    # environment:
+      # this doesn't work on swarm, container names cannot work
+      # - NGINX_PROXY_CONTAINER=nginx-proxy
+    depends_on:
+      - nginx-proxy
+    networks: 
+      - nginxproxy_default
+
+  
+  # ----------------------------------------------
+  
+  mysql:
+    # container name doesn't work for swarm
+    # container_name: mysql
+    image: mariadb
+    ports: 
+      - '3306'
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    # restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      # MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      # MYSQL_PASSWORD: wordpress
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+    networks:
+      - nginxproxy_default
+    secrets:
+      - db_root_password
+      - db_password
+
+  wordpress:
+    # container name doesn't work for swarm
+    # container_name: wp
+
+    # we are bulding our own with memchached based on wordpress:fpm-alpine
+    # image: wordpress:fpm-alpine
+
+    # build: . // doesn't work for stack deploy
+    image: eburgwedel/wordpress-fpm-alpine-memcached:latest
+    ports:
+      - '9000'
+    volumes:
+      - ./data/wordpress:/var/www/html
+      - ./data/php/conf.d/custom.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_TABLE_PREFIX: wpprefix_
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_HOST: mysql:3306
+      # WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+    depends_on:
+      - mysql
+    # restart: always
+    networks:
+      - nginxproxy_default
+    secrets:
+      - db_password
+    
+# volumes:
+#   db_data:
+#   wp_content:
+#   nginx_wp_logs:
+
+secrets:
+   db_password:
+     external: true
+   db_root_password:
+     external: true
+
+networks:
+  nginxproxy_default:
+    external: false
