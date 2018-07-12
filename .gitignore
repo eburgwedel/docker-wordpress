@@ -1,7 +1,6 @@
 # Specific Section #
 ####################
 /data
-/initial file structure
 docker-compose-og.yaml
 
 # General Section #
